@@ -1,4 +1,4 @@
-package com.github2136.sqlite_util;
+package com.github2136.sqlite;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;

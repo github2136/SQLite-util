@@ -1,4 +1,4 @@
-package com.github2136.sqlite_util;
+package com.github2136.sqliteutil;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

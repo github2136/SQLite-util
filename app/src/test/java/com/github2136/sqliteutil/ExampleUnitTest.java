@@ -1,4 +1,4 @@
-package com.github2136.sqlite_util;
+package com.github2136.sqliteutil;
 
 import org.junit.Test;
 
