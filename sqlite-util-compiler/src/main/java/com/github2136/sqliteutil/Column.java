@@ -9,7 +9,6 @@ import java.lang.annotation.Target;
 /**
  * Created by yubin on 2017/7/20.
  */
-@Inherited
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {

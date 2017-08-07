@@ -24,7 +24,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 
 /**
  * Created by yubin on 2017/8/4.
@@ -32,6 +34,7 @@ import javax.lang.model.util.Elements;
 @AutoService(Processor.class)
 public class EnetiyProcessor extends AbstractProcessor {
     Elements elementUtils;
+    private Types mTypeUtils;
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
@@ -46,6 +49,7 @@ public class EnetiyProcessor extends AbstractProcessor {
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         elementUtils = processingEnv.getElementUtils();
+        mTypeUtils = processingEnv.getTypeUtils();
     }
 
     @Override
@@ -88,21 +92,6 @@ public class EnetiyProcessor extends AbstractProcessor {
 //                    .addStatement("System.out.println($S)", "this`s java source is created by dynamic")
 //                    .build();
         }
-        for (Map.Entry<String, List<FieldSpec>> entry : varMap.entrySet()) {
-            StringBuffer sbName = new StringBuffer();
-            for (FieldSpec fieldSpec : entry.getValue()) {
-                sbName.append(fieldSpec.initializer)
-                        .append(",");
-            }
-            if (sbName.length() > 0) {
-                sbName.deleteCharAt(sbName.length() - 1);
-            }
-            FieldSpec fs = FieldSpec.
-                    builder(String[].class, "Columns", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
-                    initializer(CodeBlock.of(" { " + sbName.toString() + " }"))
-                    .build();
-            entry.getValue().add(fs);
-        }
         System.out.println("---field get end---");
         System.out.println("------------------------");
         System.out.println("---class get start---");
@@ -116,11 +105,34 @@ public class EnetiyProcessor extends AbstractProcessor {
                 TypeSpec.Builder builder = TypeSpec.classBuilder(className + "_")
                         .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
                 List<FieldSpec> var = varMap.get(packClassName);
+                StringBuilder sbName = new StringBuilder();
                 if (var != null) {
                     for (FieldSpec fieldSpec : var) {
+                        sbName.append(fieldSpec.initializer)
+                        .append(",");
                         builder.addField(fieldSpec);
                     }
                 }
+                List<TypeMirror> superClassNames = new ArrayList<>();
+                getSuperClass(superClassNames, ele.asType());
+                System.out.println("---superClassName get start---");
+                for (TypeMirror superClassName : superClassNames) {
+                      var = varMap.get(superClassName.toString());
+                    if (var != null) {
+                        for (FieldSpec fieldSpec : var) {
+                            sbName.append(fieldSpec.initializer)
+                        .append(",");
+                            builder.addField(fieldSpec);
+                        }
+                    }
+                    System.out.println("---superClassName:" + superClassName.toString() + "---");
+                }
+                System.out.println("---superClassName get end---");
+                FieldSpec fs = FieldSpec.
+                    builder(String[].class, "Columns", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
+                    initializer(CodeBlock.of(" { " + sbName.toString() + " }"))
+                    .build();
+                builder.addField(fs);
                 TypeSpec typeSpec = builder.build();
                 JavaFile javaFile = JavaFile.builder(getPackageName(eleClass), typeSpec).build();
                 try {
@@ -130,7 +142,7 @@ public class EnetiyProcessor extends AbstractProcessor {
                 }
             }
         }
-        System.out.println("---class get start---");
+        System.out.println("---class get end---");
         System.out.println("---process end---");
         return true;
     }
@@ -142,5 +154,15 @@ public class EnetiyProcessor extends AbstractProcessor {
 
     private String getPackageName(TypeElement type) {
         return elementUtils.getPackageOf(type).getQualifiedName().toString();
+    }
+
+    private void getSuperClass(List<TypeMirror> superClass, TypeMirror type) {
+        List<? extends TypeMirror> supers = mTypeUtils.directSupertypes(type);
+        for (TypeMirror superType : supers) {
+            if (!superType.toString().equals("java.lang.Object")) {
+                superClass.add(superType);
+                getSuperClass(superClass, superType);
+            }
+        }
     }
 }

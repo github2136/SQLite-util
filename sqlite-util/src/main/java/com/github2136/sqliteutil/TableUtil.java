@@ -37,31 +37,12 @@ public class TableUtil {
         sql.append(tableName);
         sql.append("(");
         Field[] fields = clazz.getDeclaredFields();
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(Column.class)) {
-                Column column = field.getAnnotation(Column.class);
-                String columnName = column.columnName();
-                if (columnName.equals("")) {
-                    columnName = field.getName();
-                }
-                Column.Type columnType = column.columnType();
-                boolean isPrimaryKey = column.primaryKey();
-                boolean isNotNull = column.notNull();
-                boolean isUnique = column.unique();
-                sql.append(columnName);
-                sql.append(getType(columnType, field));
-                if (isPrimaryKey) {
-                    sql.append(PRIMARY_KEY);
-                }
-                if (isNotNull) {
-                    sql.append(NOT_NULL);
-                }
-                if (isUnique) {
-                    sql.append(UNIQUE);
-                }
-                sql.append(COMMA_SEP);
-            }
-        }
+        sql.append(getColumnStr(fields));
+        do {
+            clazz = clazz.getSuperclass();
+            fields = clazz.getDeclaredFields();
+            sql.append(getColumnStr(fields));
+        } while (!clazz.getName().equals("java.lang.Object"));
         sql.deleteCharAt(sql.length() - 1);
         sql.append(")");
         return sql.toString();
@@ -110,4 +91,35 @@ public class TableUtil {
                 }
         }
     }
+
+    private static StringBuilder getColumnStr(Field[] fields) {
+        StringBuilder sql = new StringBuilder();
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                Column column = field.getAnnotation(Column.class);
+                String columnName = column.columnName();
+                if (columnName.equals("")) {
+                    columnName = field.getName();
+                }
+                Column.Type columnType = column.columnType();
+                boolean isPrimaryKey = column.primaryKey();
+                boolean isNotNull = column.notNull();
+                boolean isUnique = column.unique();
+                sql.append(columnName);
+                sql.append(getType(columnType, field));
+                if (isPrimaryKey) {
+                    sql.append(PRIMARY_KEY);
+                }
+                if (isNotNull) {
+                    sql.append(NOT_NULL);
+                }
+                if (isUnique) {
+                    sql.append(UNIQUE);
+                }
+                sql.append(COMMA_SEP);
+            }
+        }
+        return sql;
+    }
+
 }
