@@ -1,6 +1,7 @@
 package com.github2136.sqliteutil;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -8,6 +9,7 @@ import java.lang.annotation.Target;
 /**
  * Created by yubin on 2017/7/20.
  */
+@Inherited
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
