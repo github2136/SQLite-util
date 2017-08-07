@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 public @interface Column {
     String columnName() default "";
 
-    enum Type {STRING, BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, BYTES, UNKNOW}
+    enum Type {STRING, BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, BYTES, DATE, UNKNOW}
 
     Type columnType() default Type.UNKNOW;
 

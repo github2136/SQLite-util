@@ -109,7 +109,7 @@ public class EnetiyProcessor extends AbstractProcessor {
                 if (var != null) {
                     for (FieldSpec fieldSpec : var) {
                         sbName.append(fieldSpec.initializer)
-                        .append(",");
+                                .append(",");
                         builder.addField(fieldSpec);
                     }
                 }
@@ -117,11 +117,11 @@ public class EnetiyProcessor extends AbstractProcessor {
                 getSuperClass(superClassNames, ele.asType());
                 System.out.println("---superClassName get start---");
                 for (TypeMirror superClassName : superClassNames) {
-                      var = varMap.get(superClassName.toString());
+                    var = varMap.get(superClassName.toString());
                     if (var != null) {
                         for (FieldSpec fieldSpec : var) {
                             sbName.append(fieldSpec.initializer)
-                        .append(",");
+                                    .append(",");
                             builder.addField(fieldSpec);
                         }
                     }
@@ -129,9 +129,9 @@ public class EnetiyProcessor extends AbstractProcessor {
                 }
                 System.out.println("---superClassName get end---");
                 FieldSpec fs = FieldSpec.
-                    builder(String[].class, "Columns", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
-                    initializer(CodeBlock.of(" { " + sbName.toString() + " }"))
-                    .build();
+                        builder(String[].class, "Columns", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
+                        initializer(CodeBlock.of(" { " + sbName.toString() + " }"))
+                        .build();
                 builder.addField(fs);
                 TypeSpec typeSpec = builder.build();
                 JavaFile javaFile = JavaFile.builder(getPackageName(eleClass), typeSpec).build();

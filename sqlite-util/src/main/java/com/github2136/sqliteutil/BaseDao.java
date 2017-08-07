@@ -7,9 +7,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.reflect.Field;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -17,10 +22,13 @@ import java.util.Map;
  */
 
 public abstract class BaseDao<T extends Class<?>, D> {
+    protected  String formatStr="yyyy-MM-dd HH:mm:ss:SSS";
+    protected SimpleDateFormat dateFormat;
     protected SQLiteOpenHelper mSQLHelper;
     private T t;
 
     public BaseDao(Context context) {
+        dateFormat = new SimpleDateFormat(formatStr, Locale.CHINA);
         mSQLHelper = getSQLHelper(context);
         t = getDataClass();
     }
@@ -50,7 +58,19 @@ public abstract class BaseDao<T extends Class<?>, D> {
         } else {
             tableName = table.tableName();
         }
-        Field[] fields = t.getDeclaredFields();
+        List<Field> fields = new ArrayList<>();
+        Field[] f = t.getDeclaredFields();
+        fields.addAll(Arrays.asList(f));
+        Class clazz = null;
+        do {
+            if (clazz == null) {
+                clazz = t.getSuperclass();
+            } else {
+                clazz = clazz.getSuperclass();
+            }
+            f = clazz.getDeclaredFields();
+            fields.addAll(Arrays.asList(f));
+        } while (!clazz.getName().equals("java.lang.Object"));
         ContentValues cv = getContentValues(d, fields);
         long result = dbWrite.insert(tableName, null, cv);
         dbWrite.close();
@@ -83,7 +103,19 @@ public abstract class BaseDao<T extends Class<?>, D> {
         } else {
             tableName = table.tableName();
         }
-        Field[] fields = t.getDeclaredFields();
+        List<Field> fields = new ArrayList<>();
+        Field[] f = t.getDeclaredFields();
+        fields.addAll(Arrays.asList(f));
+        Class clazz = null;
+        do {
+            if (clazz == null) {
+                clazz = t.getSuperclass();
+            } else {
+                clazz = clazz.getSuperclass();
+            }
+            f = clazz.getDeclaredFields();
+            fields.addAll(Arrays.asList(f));
+        } while (!clazz.getName().equals("java.lang.Object"));
         int result = 0;
         for (D d1 : d) {
             ContentValues cv = getContentValues(d1, fields);
@@ -122,7 +154,19 @@ public abstract class BaseDao<T extends Class<?>, D> {
         } else {
             tableName = table.tableName();
         }
-        Field[] fields = t.getDeclaredFields();
+        List<Field> fields = new ArrayList<>();
+        Field[] f = t.getDeclaredFields();
+        fields.addAll(Arrays.asList(f));
+        Class clazz = null;
+        do {
+            if (clazz == null) {
+                clazz = t.getSuperclass();
+            } else {
+                clazz = clazz.getSuperclass();
+            }
+            f = clazz.getDeclaredFields();
+            fields.addAll(Arrays.asList(f));
+        } while (!clazz.getName().equals("java.lang.Object"));
         Cursor cursor = dbRead.query(tableName, getColumns(fields), null, null, null, null, null);
         List<D> dArrayList = new ArrayList<>();
         try {
@@ -150,7 +194,7 @@ public abstract class BaseDao<T extends Class<?>, D> {
         return dArrayList;
     }
 
-    private ContentValues getContentValues(D d, Field[] fields) {
+    private ContentValues getContentValues(D d, List<Field> fields) {
         ContentValues cv = new ContentValues();
         try {
             for (Field field : fields) {
@@ -209,6 +253,10 @@ public abstract class BaseDao<T extends Class<?>, D> {
                                 double doubleVal = Double.parseDouble(String.valueOf(value));
                                 cv.put(columnName, doubleVal);
                             }
+                            case DATE: {
+                                String dateVal = dateFormat.format(value);
+                                cv.put(columnName, dateVal);
+                            }
                             break;
                             default:
                                 switch (field.getGenericType().toString()) {
@@ -262,6 +310,11 @@ public abstract class BaseDao<T extends Class<?>, D> {
                                         double doubleVal = Double.parseDouble(String.valueOf(value));
                                         cv.put(columnName, doubleVal);
                                         break;
+                                    case "class java.util.Date":
+                                    case "class java.sql.Date":
+                                        String dateVal = dateFormat.format(value);
+                                        cv.put(columnName, dateVal);
+                                        break;
                                 }
                         }
                     }
@@ -274,7 +327,7 @@ public abstract class BaseDao<T extends Class<?>, D> {
         }
     }
 
-    private String[] getColumns(Field[] fields) {
+    private String[] getColumns(List<Field> fields) {
         List<String> columns = new ArrayList<>();
         for (Field field : fields) {
             if (field.isAnnotationPresent(Column.class)) {
@@ -298,7 +351,7 @@ public abstract class BaseDao<T extends Class<?>, D> {
      * @param cursor
      * @return
      */
-    private Map<String, Integer> getColumnIndex(Field[] fields, Cursor cursor) {
+    private Map<String, Integer> getColumnIndex(List<Field> fields, Cursor cursor) {
         Map<String, Integer> columnIndex = new HashMap<>();
         for (Field field : fields) {
             if (field.isAnnotationPresent(Column.class)) {
@@ -317,7 +370,19 @@ public abstract class BaseDao<T extends Class<?>, D> {
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         D d = (D) Class.forName(t.getName()).newInstance();
         Class dClass = d.getClass();
-        Field[] fields = dClass.getDeclaredFields();
+        List<Field> fields = new ArrayList<>();
+        Field[] f = dClass.getDeclaredFields();
+        fields.addAll(Arrays.asList(f));
+        Class clazz = null;
+        do {
+            if (clazz == null) {
+                clazz = t.getSuperclass();
+            } else {
+                clazz = clazz.getSuperclass();
+            }
+            f = clazz.getDeclaredFields();
+            fields.addAll(Arrays.asList(f));
+        } while (!clazz.getName().equals("java.lang.Object"));
         for (Field field : fields) {
             if (field.isAnnotationPresent(Column.class)) {
                 Column column = field.getAnnotation(Column.class);
@@ -367,6 +432,14 @@ public abstract class BaseDao<T extends Class<?>, D> {
                         field.set(d, cursor.getDouble(columnIndex.get(columnName)));
                     }
                     break;
+                    case DATE: {
+                        try {
+                            field.set(d, dateFormat.parse(cursor.getString(columnIndex.get(columnName))));
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    }
                     default:
                         switch (field.getGenericType().toString()) {
                             case "class java.lang.String":
@@ -412,6 +485,14 @@ public abstract class BaseDao<T extends Class<?>, D> {
                             case "double":
                             case "class java.lang.Double":
                                 field.set(d, cursor.getDouble(columnIndex.get(columnName)));
+                                break;
+                            case "class java.util.Date":
+                            case "class java.sql.Date":
+                                try {
+                                    field.set(d, dateFormat.parse(cursor.getString(columnIndex.get(columnName))));
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
+                                }
                                 break;
                         }
                 }

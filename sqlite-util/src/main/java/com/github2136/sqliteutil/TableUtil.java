@@ -51,6 +51,7 @@ public class TableUtil {
     private static String getType(Column.Type type, Field field) {
         switch (type) {
             case STRING:
+            case DATE:
                 return DATA_TYPE_TEXT;
             case BYTE:
             case BOOLEAN:
@@ -66,6 +67,8 @@ public class TableUtil {
             default:
                 switch (field.getGenericType().toString()) {
                     case "class java.lang.String":
+                    case "class java.util.Date":
+                    case "class java.sql.Date":
                         return DATA_TYPE_TEXT;
                     case "class [B":
                     case "class [Ljava.lang.Byte;":
