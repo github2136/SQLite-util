@@ -253,6 +253,93 @@ public abstract class BaseSQLData<T> {
         return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
     }
 
+    /**
+     * 更新
+     *
+     * @param t
+     * @return
+     */
+    public boolean updateByPrimaryKey(T t) {
+        SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        String tableName;
+        Table table = null;
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
+        }
+        if (table.tableName().equals("")) {
+            tableName = clazzT.getSimpleName();
+        } else {
+            tableName = table.tableName();
+        }
+        List<Field> fields = new ArrayList<>();
+        Field[] f = clazzT.getDeclaredFields();
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
+        String pk = getPrimaryKeyField(fields);
+        String selection = null;
+        String[] selectionArgs = null;
+        if (pk != null) {
+            selection = pk + "=? ";
+            selectionArgs = new String[]{getPrimaryKeyValue(t,fields)};
+        }
+        ContentValues cv = getContentValues(t, fields);
+        int result = dbWrite.update(tableName, cv, selection, selectionArgs);
+        dbWrite.close();
+        return result > 0;
+    }
+
+    public boolean deleteByPrimaryKey(Object primaryKey) {
+        SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        String tableName;
+        Table table = null;
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
+        }
+        if (table.tableName().equals("")) {
+            tableName = clazzT.getSimpleName();
+        } else {
+            tableName = table.tableName();
+        }
+        List<Field> fields = new ArrayList<>();
+        Field[] f = clazzT.getDeclaredFields();
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
+        String pk = getPrimaryKeyField(fields);
+        String selection = null;
+        String[] selectionArgs = null;
+        if (pk != null) {
+            selection = pk + "=? ";
+            selectionArgs = new String[]{primaryKey.toString()};
+        }
+        int result = dbWrite.delete(tableName,   selection, selectionArgs);
+        dbWrite.close();
+        return result > 0;
+    }
+
     private ContentValues getContentValues(T t, List<Field> fields) {
         ContentValues cv = new ContentValues();
         try {
@@ -588,6 +675,27 @@ public abstract class BaseSQLData<T> {
             }
         }
         return primaryKey;
+    }
+
+    //获取主键值
+    private String getPrimaryKeyValue(T t, List<Field> fields) {
+        String value = null;
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                Column column = field.getAnnotation(Column.class);
+                boolean isPrimaryKey = column.primaryKey();
+                if (isPrimaryKey) {
+                    try {
+                        field.setAccessible(true);
+                        value = (String) field.get(t);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+            }
+        }
+        return value;
     }
 
     private Byte[] toObject(byte[] array) {
