@@ -38,11 +38,11 @@ public class TableUtil {
         sql.append("(");
         Field[] fields = clazz.getDeclaredFields();
         sql.append(getColumnStr(fields));
-        do {
-            clazz = clazz.getSuperclass();
-            fields = clazz.getDeclaredFields();
-            sql.append(getColumnStr(fields));
-        } while (!clazz.getName().equals("java.lang.Object"));
+//        do {
+//            clazz = clazz.getSuperclass();
+//            fields = clazz.getDeclaredFields();
+//            sql.append(getColumnStr(fields));
+//        } while (!clazz.getName().equals("java.lang.Object"));
         sql.deleteCharAt(sql.length() - 1);
         sql.append(")");
         return sql.toString();

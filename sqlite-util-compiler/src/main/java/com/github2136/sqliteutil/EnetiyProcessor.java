@@ -33,7 +33,7 @@ import javax.lang.model.util.Types;
  */
 @AutoService(Processor.class)
 public class EnetiyProcessor extends AbstractProcessor {
-    Elements elementUtils;
+    private Elements elementUtils;
     private Types mTypeUtils;
 
     @Override
@@ -113,20 +113,20 @@ public class EnetiyProcessor extends AbstractProcessor {
                         builder.addField(fieldSpec);
                     }
                 }
-                List<TypeMirror> superClassNames = new ArrayList<>();
-                getSuperClass(superClassNames, ele.asType());
-                System.out.println("---superClassName get start---");
-                for (TypeMirror superClassName : superClassNames) {
-                    var = varMap.get(superClassName.toString());
-                    if (var != null) {
-                        for (FieldSpec fieldSpec : var) {
-                            sbName.append(fieldSpec.initializer)
-                                    .append(",");
-                            builder.addField(fieldSpec);
-                        }
-                    }
-                    System.out.println("---superClassName:" + superClassName.toString() + "---");
-                }
+//                List<TypeMirror> superClassNames = new ArrayList<>();
+//                getSuperClass(superClassNames, ele.asType());
+//                System.out.println("---superClassName get start---");
+//                for (TypeMirror superClassName : superClassNames) {
+//                    var = varMap.get(superClassName.toString());
+//                if (var != null) {
+//                    for (FieldSpec fieldSpec : var) {
+//                        sbName.append(fieldSpec.initializer)
+//                                .append(",");
+//                        builder.addField(fieldSpec);
+//                    }
+//                }
+//                    System.out.println("---superClassName:" + superClassName.toString() + "---");
+//                }
                 System.out.println("---superClassName get end---");
                 FieldSpec fs = FieldSpec.
                         builder(String[].class, "Columns", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
@@ -156,13 +156,13 @@ public class EnetiyProcessor extends AbstractProcessor {
         return elementUtils.getPackageOf(type).getQualifiedName().toString();
     }
 
-    private void getSuperClass(List<TypeMirror> superClass, TypeMirror type) {
-        List<? extends TypeMirror> supers = mTypeUtils.directSupertypes(type);
-        for (TypeMirror superType : supers) {
-            if (!superType.toString().equals("java.lang.Object")) {
-                superClass.add(superType);
-                getSuperClass(superClass, superType);
-            }
-        }
-    }
+//    private void getSuperClass(List<TypeMirror> superClass, TypeMirror type) {
+//        List<? extends TypeMirror> supers = mTypeUtils.directSupertypes(type);
+//        for (TypeMirror superType : supers) {
+//            if (!superType.toString().equals("java.lang.Object")) {
+//                superClass.add(superType);
+//                getSuperClass(superClass, superType);
+//            }
+//        }
+//    }
 }

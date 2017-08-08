@@ -7,11 +7,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.lang.reflect.Field;
-import java.text.DateFormat;
+import java.lang.reflect.ParameterizedType;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,57 +20,56 @@ import java.util.Map;
  * Created by yubin on 2017/7/24.
  */
 
-public abstract class BaseDao<T extends Class<?>, D> {
-    protected  String formatStr="yyyy-MM-dd HH:mm:ss:SSS";
+public abstract class BaseSQLData<T> {
+    protected String formatStr = "yyyy-MM-dd HH:mm:ss:SSS";
     protected SimpleDateFormat dateFormat;
     protected SQLiteOpenHelper mSQLHelper;
-    private T t;
+    private Class<T> clazzT;
 
-    public BaseDao(Context context) {
+    public BaseSQLData(Context context) {
         dateFormat = new SimpleDateFormat(formatStr, Locale.CHINA);
         mSQLHelper = getSQLHelper(context);
-        t = getDataClass();
+        clazzT = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
     public abstract SQLiteOpenHelper getSQLHelper(Context context);
 
-    public abstract T getDataClass();
 
     /**
      * 插入数据
      *
-     * @param d
+     * @param t
      * @return
      */
-    public boolean insert(D d) {
+    public boolean insert(T t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
         String tableName;
         Table table = null;
-        if (t.isAnnotationPresent(Table.class)) {
-            table = t.getAnnotation(Table.class);
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
         }
         if (table == null) {
-            throw new RuntimeException("No Table annotations in class " + t.getName());
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
         }
         if (table.tableName().equals("")) {
-            tableName = t.getSimpleName();
+            tableName = clazzT.getSimpleName();
         } else {
             tableName = table.tableName();
         }
         List<Field> fields = new ArrayList<>();
-        Field[] f = t.getDeclaredFields();
-        fields.addAll(Arrays.asList(f));
-        Class clazz = null;
-        do {
-            if (clazz == null) {
-                clazz = t.getSuperclass();
-            } else {
-                clazz = clazz.getSuperclass();
-            }
-            f = clazz.getDeclaredFields();
-            fields.addAll(Arrays.asList(f));
-        } while (!clazz.getName().equals("java.lang.Object"));
-        ContentValues cv = getContentValues(d, fields);
+        Field[] f = clazzT.getDeclaredFields();
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
+        ContentValues cv = getContentValues(t, fields);
         long result = dbWrite.insert(tableName, null, cv);
         dbWrite.close();
         if (cv != null) {
@@ -84,46 +82,46 @@ public abstract class BaseDao<T extends Class<?>, D> {
     /**
      * 插入数据
      *
-     * @param d
+     * @param t
      * @return
      */
-    public boolean insert(List<D> d) {
+    public boolean insert(List<T> t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
         dbWrite.beginTransaction();
         String tableName;
         Table table = null;
-        if (t.isAnnotationPresent(Table.class)) {
-            table = t.getAnnotation(Table.class);
+        if (t.getClass().isAnnotationPresent(Table.class)) {
+            table = t.getClass().getAnnotation(Table.class);
         }
         if (table == null) {
-            throw new RuntimeException("No Table annotations in class " + t.getName());
+            throw new RuntimeException("No Table annotations in class " + t.getClass().getName());
         }
         if (table.tableName().equals("")) {
-            tableName = t.getSimpleName();
+            tableName = t.getClass().getSimpleName();
         } else {
             tableName = table.tableName();
         }
         List<Field> fields = new ArrayList<>();
-        Field[] f = t.getDeclaredFields();
-        fields.addAll(Arrays.asList(f));
-        Class clazz = null;
-        do {
-            if (clazz == null) {
-                clazz = t.getSuperclass();
-            } else {
-                clazz = clazz.getSuperclass();
-            }
-            f = clazz.getDeclaredFields();
-            fields.addAll(Arrays.asList(f));
-        } while (!clazz.getName().equals("java.lang.Object"));
+        Field[] f = t.getClass().getDeclaredFields();
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
         int result = 0;
-        for (D d1 : d) {
+        for (T d1 : t) {
             ContentValues cv = getContentValues(d1, fields);
             if (cv != null && dbWrite.insert(tableName, null, cv) > 0) {
                 result++;
             }
         }
-        if (result == d.size()) {
+        if (result == t.size()) {
             dbWrite.setTransactionSuccessful();
         } else {
             result = 0;
@@ -138,37 +136,36 @@ public abstract class BaseDao<T extends Class<?>, D> {
      *
      * @return
      */
-    public List<D> query() {
+    public List<T> query() {
         SQLiteDatabase dbRead = mSQLHelper.getReadableDatabase();
-
         String tableName;
         Table table = null;
-        if (t.isAnnotationPresent(Table.class)) {
-            table = t.getAnnotation(Table.class);
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
         }
         if (table == null) {
-            throw new RuntimeException("No Table annotations in class " + t.getName());
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
         }
         if (table.tableName().equals("")) {
-            tableName = t.getSimpleName();
+            tableName = clazzT.getSimpleName();
         } else {
             tableName = table.tableName();
         }
         List<Field> fields = new ArrayList<>();
-        Field[] f = t.getDeclaredFields();
-        fields.addAll(Arrays.asList(f));
-        Class clazz = null;
-        do {
-            if (clazz == null) {
-                clazz = t.getSuperclass();
-            } else {
-                clazz = clazz.getSuperclass();
-            }
-            f = clazz.getDeclaredFields();
-            fields.addAll(Arrays.asList(f));
-        } while (!clazz.getName().equals("java.lang.Object"));
+        Field[] f = clazzT.getDeclaredFields();
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
         Cursor cursor = dbRead.query(tableName, getColumns(fields), null, null, null, null, null);
-        List<D> dArrayList = new ArrayList<>();
+        List<T> dArrayList = new ArrayList<>();
         try {
             if (cursor != null && cursor.moveToFirst()) {
                 Map<String, Integer> columnIndex = getColumnIndex(fields, cursor);
@@ -194,7 +191,69 @@ public abstract class BaseDao<T extends Class<?>, D> {
         return dArrayList;
     }
 
-    private ContentValues getContentValues(D d, List<Field> fields) {
+    public T queryByPrimaryKey(String primaryKey) {
+        SQLiteDatabase dbRead = mSQLHelper.getReadableDatabase();
+        String tableName;
+        Table table = null;
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
+        }
+        if (table.tableName().equals("")) {
+            tableName = clazzT.getSimpleName();
+        } else {
+            tableName = table.tableName();
+        }
+        List<Field> fields = new ArrayList<>();
+        Field[] f = clazzT.getDeclaredFields();
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
+        String pk = getPrimaryKeyField(fields);
+        String selection = null;
+        String[] selectionArgs = null;
+        if (pk != null) {
+            selection = pk + "=? ";
+            selectionArgs = new String[]{primaryKey};
+        }
+        Cursor cursor = dbRead.query(tableName, getColumns(fields), selection, selectionArgs, null, null, null);
+        List<T> dArrayList = new ArrayList<>();
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                Map<String, Integer> columnIndex = getColumnIndex(fields, cursor);
+                do {
+                    dArrayList.add(getData(columnIndex, cursor));
+                } while (cursor.moveToNext());
+            }
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+            return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+            return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            dbRead.close();
+        }
+        return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
+    }
+
+    private ContentValues getContentValues(T t, List<Field> fields) {
         ContentValues cv = new ContentValues();
         try {
             for (Field field : fields) {
@@ -206,7 +265,7 @@ public abstract class BaseDao<T extends Class<?>, D> {
                     }
                     Column.Type columnType = column.columnType();
                     field.setAccessible(true);
-                    Object value = field.get(d);
+                    Object value = field.get(t);
                     if (value != null) {
                         switch (columnType) {
                             case STRING: {
@@ -366,23 +425,23 @@ public abstract class BaseDao<T extends Class<?>, D> {
         return columnIndex;
     }
 
-    private D getData(Map<String, Integer> columnIndex, Cursor cursor)
+    private T getData(Map<String, Integer> columnIndex, Cursor cursor)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        D d = (D) Class.forName(t.getName()).newInstance();
+        T d = (T) Class.forName(clazzT.getName()).newInstance();
         Class dClass = d.getClass();
         List<Field> fields = new ArrayList<>();
         Field[] f = dClass.getDeclaredFields();
-        fields.addAll(Arrays.asList(f));
-        Class clazz = null;
-        do {
-            if (clazz == null) {
-                clazz = t.getSuperclass();
-            } else {
-                clazz = clazz.getSuperclass();
-            }
-            f = clazz.getDeclaredFields();
-            fields.addAll(Arrays.asList(f));
-        } while (!clazz.getName().equals("java.lang.Object"));
+        fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
         for (Field field : fields) {
             if (field.isAnnotationPresent(Column.class)) {
                 Column column = field.getAnnotation(Column.class);
@@ -499,6 +558,36 @@ public abstract class BaseDao<T extends Class<?>, D> {
             }
         }
         return d;
+    }
+
+    private List<Field> getDataField(Field[] fields) {
+        List<Field> fs = new ArrayList<>(fields.length);
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                fs.add(field);
+            }
+        }
+        return fs;
+    }
+
+    //获取主键
+    private String getPrimaryKeyField(List<Field> fields) {
+        String primaryKey = null;
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                Column column = field.getAnnotation(Column.class);
+                String columnName = column.columnName();
+                if (columnName.equals("")) {
+                    columnName = field.getName();
+                }
+                boolean isPrimaryKey = column.primaryKey();
+                if (isPrimaryKey) {
+                    primaryKey = columnName;
+                    break;
+                }
+            }
+        }
+        return primaryKey;
     }
 
     private Byte[] toObject(byte[] array) {
