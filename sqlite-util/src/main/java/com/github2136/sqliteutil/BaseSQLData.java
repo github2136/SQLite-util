@@ -136,7 +136,7 @@ public abstract class BaseSQLData<T> {
      *
      * @return
      */
-    public List<T> query() {
+    public List<T> query(String selection, String[] selectionArgs, String groupBy, String having, String orderBy) {
         SQLiteDatabase dbRead = mSQLHelper.getReadableDatabase();
         String tableName;
         Table table = null;
@@ -164,7 +164,7 @@ public abstract class BaseSQLData<T> {
 //            f = clazz.getDeclaredFields();
 //            fields.addAll(Arrays.asList(f));
 //        } while (!clazz.getName().equals("java.lang.Object"));
-        Cursor cursor = dbRead.query(tableName, getColumns(fields), null, null, null, null, null);
+        Cursor cursor = dbRead.query(tableName, getColumns(fields), selection, selectionArgs, groupBy, having, orderBy);
         List<T> dArrayList = new ArrayList<>();
         try {
             if (cursor != null && cursor.moveToFirst()) {
@@ -191,34 +191,15 @@ public abstract class BaseSQLData<T> {
         return dArrayList;
     }
 
+    public List<T> query() {
+        return query(null, null, null, null, null);
+    }
+
     public T queryByPrimaryKey(String primaryKey) {
-        SQLiteDatabase dbRead = mSQLHelper.getReadableDatabase();
-        String tableName;
-        Table table = null;
-        if (clazzT.isAnnotationPresent(Table.class)) {
-            table = clazzT.getAnnotation(Table.class);
-        }
-        if (table == null) {
-            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
-        }
-        if (table.tableName().equals("")) {
-            tableName = clazzT.getSimpleName();
-        } else {
-            tableName = table.tableName();
-        }
+        List<T> dArrayList;
         List<Field> fields = new ArrayList<>();
         Field[] f = clazzT.getDeclaredFields();
         fields.addAll(getDataField(f));
-//        Class clazz = null;
-//        do {
-//            if (clazz == null) {
-//                clazz = t.getSuperclass();
-//            } else {
-//                clazz = clazz.getSuperclass();
-//            }
-//            f = clazz.getDeclaredFields();
-//            fields.addAll(Arrays.asList(f));
-//        } while (!clazz.getName().equals("java.lang.Object"));
         String pk = getPrimaryKeyField(fields);
         String selection = null;
         String[] selectionArgs = null;
@@ -226,30 +207,7 @@ public abstract class BaseSQLData<T> {
             selection = pk + "=? ";
             selectionArgs = new String[]{primaryKey};
         }
-        Cursor cursor = dbRead.query(tableName, getColumns(fields), selection, selectionArgs, null, null, null);
-        List<T> dArrayList = new ArrayList<>();
-        try {
-            if (cursor != null && cursor.moveToFirst()) {
-                Map<String, Integer> columnIndex = getColumnIndex(fields, cursor);
-                do {
-                    dArrayList.add(getData(columnIndex, cursor));
-                } while (cursor.moveToNext());
-            }
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-            return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-            return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-            dbRead.close();
-        }
+        dArrayList = query(selection, selectionArgs, null, null, null);
         return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
     }
 
@@ -292,7 +250,7 @@ public abstract class BaseSQLData<T> {
         String[] selectionArgs = null;
         if (pk != null) {
             selection = pk + "=? ";
-            selectionArgs = new String[]{getPrimaryKeyValue(t,fields)};
+            selectionArgs = new String[]{getPrimaryKeyValue(t, fields)};
         }
         ContentValues cv = getContentValues(t, fields);
         int result = dbWrite.update(tableName, cv, selection, selectionArgs);
@@ -335,7 +293,7 @@ public abstract class BaseSQLData<T> {
             selection = pk + "=? ";
             selectionArgs = new String[]{primaryKey.toString()};
         }
-        int result = dbWrite.delete(tableName,   selection, selectionArgs);
+        int result = dbWrite.delete(tableName, selection, selectionArgs);
         dbWrite.close();
         return result > 0;
     }
