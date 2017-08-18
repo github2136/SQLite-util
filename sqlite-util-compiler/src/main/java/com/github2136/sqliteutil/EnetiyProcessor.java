@@ -80,7 +80,7 @@ public class EnetiyProcessor extends AbstractProcessor {
                     varMap.put(className, var);
                 }
                 FieldSpec fs = FieldSpec.
-                        builder(String.class, "DATA_" + fieldName, Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
+                        builder(String.class, "DATA_" + fieldName, Modifier.PUBLIC, Modifier.FINAL, Modifier.STATIC).
                         initializer(CodeBlock.of("\"" + fieldName + "\""))
                         .build();
                 var.add(fs);
@@ -129,7 +129,7 @@ public class EnetiyProcessor extends AbstractProcessor {
 //                }
                 System.out.println("---superClassName get end---");
                 FieldSpec fs = FieldSpec.
-                        builder(String[].class, "Columns", Modifier.PRIVATE, Modifier.FINAL, Modifier.STATIC).
+                        builder(String[].class, "Columns", Modifier.PUBLIC, Modifier.FINAL, Modifier.STATIC).
                         initializer(CodeBlock.of(" { " + sbName.toString() + " }"))
                         .build();
                 builder.addField(fs);
