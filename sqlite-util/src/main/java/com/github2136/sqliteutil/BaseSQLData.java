@@ -136,7 +136,7 @@ public abstract class BaseSQLData<T> {
      *
      * @return
      */
-    public List<T> query(String selection, String[] selectionArgs, String groupBy, String having, String orderBy) {
+    public List<T> query(String selection, String[] selectionArgs, String groupBy, String having, String orderBy, String limit) {
         SQLiteDatabase dbRead = mSQLHelper.getReadableDatabase();
         String tableName;
         Table table = null;
@@ -164,7 +164,7 @@ public abstract class BaseSQLData<T> {
 //            f = clazz.getDeclaredFields();
 //            fields.addAll(Arrays.asList(f));
 //        } while (!clazz.getName().equals("java.lang.Object"));
-        Cursor cursor = dbRead.query(tableName, getColumns(fields), selection, selectionArgs, groupBy, having, orderBy);
+        Cursor cursor = dbRead.query(tableName, getColumns(fields), selection, selectionArgs, groupBy, having, orderBy, limit);
         List<T> dArrayList = new ArrayList<>();
         try {
             if (cursor != null && cursor.moveToFirst()) {
@@ -192,7 +192,7 @@ public abstract class BaseSQLData<T> {
     }
 
     public List<T> query() {
-        return query(null, null, null, null, null);
+        return query(null, null, null, null, null, null);
     }
 
     public T queryByPrimaryKey(String primaryKey) {
@@ -207,7 +207,7 @@ public abstract class BaseSQLData<T> {
             selection = pk + "=? ";
             selectionArgs = new String[]{primaryKey};
         }
-        dArrayList = query(selection, selectionArgs, null, null, null);
+        dArrayList = query(selection, selectionArgs, null, null, null, null);
         return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
     }
 
