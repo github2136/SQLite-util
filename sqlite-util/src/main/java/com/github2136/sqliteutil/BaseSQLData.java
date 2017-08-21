@@ -501,7 +501,9 @@ public abstract class BaseSQLData<T> {
                 }
                 Column.Type columnType = column.columnType();
                 field.setAccessible(true);
-
+                if (cursor.isNull(columnIndex.get(columnName))) {
+                    continue;
+                }
                 switch (columnType) {
                     case STRING: {
                         field.set(d, cursor.getString(columnIndex.get(columnName)));
