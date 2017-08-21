@@ -90,6 +90,7 @@ public abstract class BaseSQLData<T> {
         dbWrite.beginTransaction();
         String tableName;
         Table table = null;
+        int result = 0;
         if (t != null && !t.isEmpty()) {
             if (t.get(0).getClass().isAnnotationPresent(Table.class)) {
                 table = t.get(0).getClass().getAnnotation(Table.class);
@@ -97,17 +98,14 @@ public abstract class BaseSQLData<T> {
             if (table == null) {
                 throw new RuntimeException("No Table annotations in class " + t.get(0).getClass().getName());
             }
-        }else{
-            throw new RuntimeException("List is empty  " + t.get(0).getClass().getName());
-        }
-        if (table.tableName().equals("")) {
-            tableName = t.getClass().getSimpleName();
-        } else {
-            tableName = table.tableName();
-        }
-        List<Field> fields = new ArrayList<>();
-        Field[] f = t.getClass().getDeclaredFields();
-        fields.addAll(getDataField(f));
+            if (table.tableName().equals("")) {
+                tableName = t.getClass().getSimpleName();
+            } else {
+                tableName = table.tableName();
+            }
+            List<Field> fields = new ArrayList<>();
+            Field[] f = t.get(0).getClass().getDeclaredFields();
+            fields.addAll(getDataField(f));
 //        Class clazz = null;
 //        do {
 //            if (clazz == null) {
@@ -118,17 +116,20 @@ public abstract class BaseSQLData<T> {
 //            f = clazz.getDeclaredFields();
 //            fields.addAll(Arrays.asList(f));
 //        } while (!clazz.getName().equals("java.lang.Object"));
-        int result = 0;
-        for (T d1 : t) {
-            ContentValues cv = getContentValues(d1, fields);
-            if (cv != null && dbWrite.insert(tableName, null, cv) > 0) {
-                result++;
+
+            for (T d1 : t) {
+                ContentValues cv = getContentValues(d1, fields);
+                if (cv != null && dbWrite.insert(tableName, null, cv) > 0) {
+                    result++;
+                }
             }
-        }
-        if (result == t.size()) {
-            dbWrite.setTransactionSuccessful();
+            if (result == t.size()) {
+                dbWrite.setTransactionSuccessful();
+            } else {
+                result = 0;
+            }
         } else {
-            result = 0;
+            throw new RuntimeException("List is empty  ");
         }
         dbWrite.endTransaction();
         dbWrite.close();
