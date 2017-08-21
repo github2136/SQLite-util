@@ -99,7 +99,7 @@ public abstract class BaseSQLData<T> {
                 throw new RuntimeException("No Table annotations in class " + t.get(0).getClass().getName());
             }
             if (table.tableName().equals("")) {
-                tableName = t.getClass().getSimpleName();
+                tableName = t.get(0).getClass().getSimpleName();
             } else {
                 tableName = table.tableName();
             }
