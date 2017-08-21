@@ -90,11 +90,15 @@ public abstract class BaseSQLData<T> {
         dbWrite.beginTransaction();
         String tableName;
         Table table = null;
-        if (t.getClass().isAnnotationPresent(Table.class)) {
-            table = t.getClass().getAnnotation(Table.class);
-        }
-        if (table == null) {
-            throw new RuntimeException("No Table annotations in class " + t.getClass().getName());
+        if (t != null && !t.isEmpty()) {
+            if (t.get(0).getClass().isAnnotationPresent(Table.class)) {
+                table = t.get(0).getClass().getAnnotation(Table.class);
+            }
+            if (table == null) {
+                throw new RuntimeException("No Table annotations in class " + t.get(0).getClass().getName());
+            }
+        }else{
+            throw new RuntimeException("List is empty  " + t.get(0).getClass().getName());
         }
         if (table.tableName().equals("")) {
             tableName = t.getClass().getSimpleName();
