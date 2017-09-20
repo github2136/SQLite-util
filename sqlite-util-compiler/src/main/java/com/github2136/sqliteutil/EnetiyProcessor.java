@@ -68,16 +68,18 @@ public class EnetiyProcessor extends AbstractProcessor {
             if (ele.getKind() == ElementKind.FIELD) {
                 eleField = (VariableElement) ele;
                 TypeElement enclosingElement = (TypeElement) eleField.getEnclosingElement();
-                String className = enclosingElement.getQualifiedName().toString();
+                String packClassName = enclosingElement.getQualifiedName().toString();
+                System.out.println("---packClassName:" + packClassName + "---");
+                String className = enclosingElement.getSimpleName().toString();
                 System.out.println("---className:" + className + "---");
                 String fieldName = eleField.getSimpleName().toString();
                 System.out.println("---field:" + fieldName + "---");
                 String type = eleField.asType().toString();
                 System.out.println("---type:" + type + "---");
-                List<FieldSpec> var = varMap.get(className);
+                List<FieldSpec> var = varMap.get(packClassName);
                 if (var == null) {
                     var = new ArrayList<>();
-                    varMap.put(className, var);
+                    varMap.put(packClassName, var);
                 }
                 FieldSpec fs = FieldSpec.
                         builder(String.class, "DATA_" + fieldName, Modifier.PUBLIC, Modifier.FINAL, Modifier.STATIC).

@@ -32,7 +32,7 @@ public abstract class BaseSQLData<T> {
         clazzT = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
 
-    public abstract SQLiteOpenHelper getSQLHelper(Context context);
+    protected abstract SQLiteOpenHelper getSQLHelper(Context context);
 
 
     /**
