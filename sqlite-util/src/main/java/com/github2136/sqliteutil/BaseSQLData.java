@@ -34,7 +34,6 @@ public abstract class BaseSQLData<T> {
 
     protected abstract SQLiteOpenHelper getSQLHelper(Context context);
 
-
     /**
      * 插入数据
      *
@@ -43,6 +42,12 @@ public abstract class BaseSQLData<T> {
      */
     public boolean insert(T t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        long result = insert(dbWrite, t);
+        dbWrite.close();
+        return result > 0;
+    }
+
+    public long insert(SQLiteDatabase dbWrite, T t) {
         String tableName;
         Table table = null;
         if (clazzT.isAnnotationPresent(Table.class)) {
@@ -70,13 +75,7 @@ public abstract class BaseSQLData<T> {
 //            fields.addAll(Arrays.asList(f));
 //        } while (!clazz.getName().equals("java.lang.Object"));
         ContentValues cv = getContentValues(t, fields);
-        long result = dbWrite.insert(tableName, null, cv);
-        dbWrite.close();
-        if (cv != null) {
-            return result > 0;
-        } else {
-            return false;
-        }
+        return dbWrite.insert(tableName, null, cv);
     }
 
     /**
@@ -224,6 +223,12 @@ public abstract class BaseSQLData<T> {
      */
     public boolean updateByPrimaryKey(T t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        int result = updateByPrimaryKey(dbWrite, t);
+        dbWrite.close();
+        return result > 0;
+    }
+
+    public int updateByPrimaryKey(SQLiteDatabase dbWrite, T t) {
         String tableName;
         Table table = null;
         if (clazzT.isAnnotationPresent(Table.class)) {
@@ -258,13 +263,17 @@ public abstract class BaseSQLData<T> {
             selectionArgs = new String[]{getPrimaryKeyValue(t, fields)};
         }
         ContentValues cv = getContentValues(t, fields);
-        int result = dbWrite.update(tableName, cv, selection, selectionArgs);
-        dbWrite.close();
-        return result > 0;
+        return dbWrite.update(tableName, cv, selection, selectionArgs);
     }
 
     public boolean deleteByPrimaryKey(Object primaryKey) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        int result = deleteByPrimaryKey(dbWrite, primaryKey);
+        dbWrite.close();
+        return result > 0;
+    }
+
+    public int deleteByPrimaryKey(SQLiteDatabase dbWrite, Object primaryKey) {
         String tableName;
         Table table = null;
         if (clazzT.isAnnotationPresent(Table.class)) {
@@ -298,9 +307,7 @@ public abstract class BaseSQLData<T> {
             selection = pk + "=? ";
             selectionArgs = new String[]{primaryKey.toString()};
         }
-        int result = dbWrite.delete(tableName, selection, selectionArgs);
-        dbWrite.close();
-        return result > 0;
+        return dbWrite.delete(tableName, selection, selectionArgs);
     }
 
     private ContentValues getContentValues(T t, List<Field> fields) {
