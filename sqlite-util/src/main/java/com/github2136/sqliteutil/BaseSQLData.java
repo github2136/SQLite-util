@@ -34,17 +34,14 @@ public abstract class BaseSQLData<T> {
 
     protected abstract SQLiteOpenHelper getSQLHelper(Context context);
 
-    /**
-     * 插入数据
-     *
-     * @param t
-     * @return
-     */
-    public boolean insert(T t) {
+    ///////////////////////////////////////////////////////////////////////////
+    // 插入
+    ///////////////////////////////////////////////////////////////////////////
+    public long insert(T t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
         long result = insert(dbWrite, t);
         dbWrite.close();
-        return result > 0;
+        return result;
     }
 
     public long insert(SQLiteDatabase dbWrite, T t) {
@@ -78,12 +75,6 @@ public abstract class BaseSQLData<T> {
         return dbWrite.insert(tableName, null, cv);
     }
 
-    /**
-     * 插入数据
-     *
-     * @param t
-     * @return
-     */
     public boolean insert(List<T> t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
         dbWrite.beginTransaction();
@@ -135,11 +126,56 @@ public abstract class BaseSQLData<T> {
         return result > 0;
     }
 
-    /**
-     * 查询所有数据
-     *
-     * @return
-     */
+    public int insert(SQLiteDatabase dbWrite, List<T> t) {
+        String tableName;
+        Table table = null;
+        int result = 0;
+        if (t != null && !t.isEmpty()) {
+            if (t.get(0).getClass().isAnnotationPresent(Table.class)) {
+                table = t.get(0).getClass().getAnnotation(Table.class);
+            }
+            if (table == null) {
+                throw new RuntimeException("No Table annotations in class " + t.get(0).getClass().getName());
+            }
+            if (table.tableName().equals("")) {
+                tableName = t.get(0).getClass().getSimpleName();
+            } else {
+                tableName = table.tableName();
+            }
+            List<Field> fields = new ArrayList<>();
+            Field[] f = t.get(0).getClass().getDeclaredFields();
+            fields.addAll(getDataField(f));
+//        Class clazz = null;
+//        do {
+//            if (clazz == null) {
+//                clazz = t.getSuperclass();
+//            } else {
+//                clazz = clazz.getSuperclass();
+//            }
+//            f = clazz.getDeclaredFields();
+//            fields.addAll(Arrays.asList(f));
+//        } while (!clazz.getName().equals("java.lang.Object"));
+
+            for (T d1 : t) {
+                ContentValues cv = getContentValues(d1, fields);
+                if (cv != null && dbWrite.insert(tableName, null, cv) > 0) {
+                    result++;
+                }
+            }
+            result = 0;
+        } else {
+            throw new RuntimeException("List is empty  ");
+        }
+        return result;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // 查询
+    ///////////////////////////////////////////////////////////////////////////
+    public List<T> query() {
+        return query(null, null, null, null, null, null);
+    }
+
     public List<T> query(String selection, String[] selectionArgs, String groupBy, String having, String orderBy, String limit) {
         SQLiteDatabase dbRead = mSQLHelper.getReadableDatabase();
         String tableName;
@@ -195,10 +231,6 @@ public abstract class BaseSQLData<T> {
         return dArrayList;
     }
 
-    public List<T> query() {
-        return query(null, null, null, null, null, null);
-    }
-
     public T queryByPrimaryKey(String primaryKey) {
         List<T> dArrayList;
         List<Field> fields = new ArrayList<>();
@@ -215,12 +247,33 @@ public abstract class BaseSQLData<T> {
         return !dArrayList.isEmpty() ? dArrayList.get(0) : null;
     }
 
-    /**
-     * 更新
-     *
-     * @param t
-     * @return
-     */
+    ///////////////////////////////////////////////////////////////////////////
+    // 更新
+    ///////////////////////////////////////////////////////////////////////////
+    public int update(ContentValues values, String whereClause, String[] whereArgs) {
+        SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        int result = update(dbWrite, values, whereClause, whereArgs);
+        dbWrite.close();
+        return result;
+    }
+
+    public int update(SQLiteDatabase dbWrite, ContentValues values, String whereClause, String[] whereArgs) {
+        String tableName;
+        Table table = null;
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
+        }
+        if (table.tableName().equals("")) {
+            tableName = clazzT.getSimpleName();
+        } else {
+            tableName = table.tableName();
+        }
+        return dbWrite.update(tableName, values, whereClause, whereArgs);
+    }
+
     public boolean updateByPrimaryKey(T t) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
         int result = updateByPrimaryKey(dbWrite, t);
@@ -266,14 +319,17 @@ public abstract class BaseSQLData<T> {
         return dbWrite.update(tableName, cv, selection, selectionArgs);
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // 删除
+    ///////////////////////////////////////////////////////////////////////////
     public boolean deleteByPrimaryKey(Object primaryKey) {
         SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
-        int result = deleteByPrimaryKey(dbWrite, primaryKey);
+        boolean result = deleteByPrimaryKey(dbWrite, primaryKey);
         dbWrite.close();
-        return result > 0;
+        return result;
     }
 
-    public int deleteByPrimaryKey(SQLiteDatabase dbWrite, Object primaryKey) {
+    public boolean deleteByPrimaryKey(SQLiteDatabase dbWrite, Object primaryKey) {
         String tableName;
         Table table = null;
         if (clazzT.isAnnotationPresent(Table.class)) {
@@ -307,9 +363,36 @@ public abstract class BaseSQLData<T> {
             selection = pk + "=? ";
             selectionArgs = new String[]{primaryKey.toString()};
         }
-        return dbWrite.delete(tableName, selection, selectionArgs);
+        return dbWrite.delete(tableName, selection, selectionArgs) > 0;
     }
 
+    public int delete(String whereClause, String[] whereArgs) {
+        SQLiteDatabase dbWrite = mSQLHelper.getWritableDatabase();
+        int result = delete(dbWrite, whereClause, whereArgs);
+        dbWrite.close();
+        return result;
+    }
+
+    public int delete(SQLiteDatabase dbWrite, String whereClause, String[] whereArgs) {
+        String tableName;
+        Table table = null;
+        if (clazzT.isAnnotationPresent(Table.class)) {
+            table = clazzT.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new RuntimeException("No Table annotations in class " + clazzT.getName());
+        }
+        if (table.tableName().equals("")) {
+            tableName = clazzT.getSimpleName();
+        } else {
+            tableName = table.tableName();
+        }
+        return dbWrite.delete(tableName, whereClause, whereArgs);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // 私有方法
+    ///////////////////////////////////////////////////////////////////////////
     private ContentValues getContentValues(T t, List<Field> fields) {
         ContentValues cv = new ContentValues();
         try {
