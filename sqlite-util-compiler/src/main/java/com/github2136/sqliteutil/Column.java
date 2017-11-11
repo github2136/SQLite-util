@@ -12,6 +12,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
+    //版本号
+    int version() default 1;
+
+    //列明
     String columnName() default "";
 
     enum Type {STRING, BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, BYTES, DATE, UNKNOW}
@@ -26,4 +30,7 @@ public @interface Column {
 
     //唯一
     boolean unique() default false;
+
+    //默认值
+    String defaultVal() default "";
 }

@@ -12,7 +12,7 @@ import com.github2136.sqliteutil.TableUtil;
  */
 public class DBHelper extends SQLiteOpenHelper {
     private static final String DB_NAME = "sql.db";
-    private static final int DB_VERSION = 1;
+    private static final int DB_VERSION = 3;
 
     public DBHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -33,6 +33,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        db.execSQL(TableUtil.getUpdateSQL(Entity.class, oldVersion, newVersion));
     }
 }

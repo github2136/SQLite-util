@@ -14,10 +14,17 @@ public class TableUtil {
     static final String DATA_TYPE_REAL = " REAL";
 
     static final String PRIMARY_KEY = " PRIMARY KEY";
-    static final String NOT_NULL = " NOT UNKNOW";
+    static final String DEFAULT_VAL = " DEFAULT ";
+    static final String NOT_NULL = " NOT NULL";
     static final String UNIQUE = " UNIQUE";
     static final String COMMA_SEP = ",";
 
+    /**
+     * 建表语句
+     *
+     * @param clazz
+     * @return
+     */
     public static String getCreateSQL(Class<?> clazz) {
         StringBuilder sql = new StringBuilder();
         String tableName;
@@ -45,6 +52,79 @@ public class TableUtil {
 //        } while (!clazz.getName().equals("java.lang.Object"));
         sql.deleteCharAt(sql.length() - 1);
         sql.append(")");
+        return sql.toString();
+    }
+
+    /**
+     * 更新语句<br>
+     * 更新语句仅可添加字段，不可删除或修改字段，添加的字段不可加PRIMARY_KEY（主键）UNIQUE（唯一）约束，不然会报错
+     *
+     * @param clazz
+     * @param oldVersion
+     * @param newVersion
+     * @return
+     */
+    public static String getUpdateSQL(Class<?> clazz, int oldVersion, int newVersion) {
+        StringBuilder sql = new StringBuilder();
+        String tableName;
+        Table table = null;
+        if (clazz.isAnnotationPresent(Table.class)) {
+            table = clazz.getAnnotation(Table.class);
+        }
+        if (table == null) {
+            throw new RuntimeException("No Table annotations in class " + clazz.getName());
+        }
+        if (table.tableName().equals("")) {
+            tableName = clazz.getSimpleName();
+        } else {
+            tableName = table.tableName();
+        }
+        Field[] fields = clazz.getDeclaredFields();
+        sql.append("ALTER TABLE ")
+                .append(tableName)
+                .append(" ");
+        sql.append(getUpdateStr(fields, oldVersion, newVersion));
+        sql.deleteCharAt(sql.length() - 1);
+        sql.append(";");
+        return sql.toString();
+    }
+
+    private static String getUpdateStr(Field[] fields, int oldVersion, int newVersion) {
+        StringBuilder sql = new StringBuilder();
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Column.class)) {
+                Column column = field.getAnnotation(Column.class);
+                String columnName = column.columnName();
+                if (columnName.equals("")) {
+                    columnName = field.getName();
+                }
+                Column.Type columnType = column.columnType();
+                int version = column.version();
+                boolean isPrimaryKey = column.primaryKey();
+                boolean isNotNull = column.notNull();
+                boolean isUnique = column.unique();
+                String defaultVal = column.defaultVal();
+                if (version > oldVersion && version <= newVersion) {
+                    sql.append("ADD COLUMN ");
+                    sql.append(columnName)
+                            .append(" ")
+                            .append(getType(columnType, field));
+                    if (!defaultVal.equals("")) {
+                        sql.append(String.format("%s '%s'", DEFAULT_VAL, defaultVal));
+                    }
+                    if (isPrimaryKey) {
+                        sql.append(PRIMARY_KEY);
+                    }
+                    if (isNotNull) {
+                        sql.append(NOT_NULL);
+                    }
+                    if (isUnique) {
+                        sql.append(UNIQUE);
+                    }
+                    sql.append(COMMA_SEP);
+                }
+            }
+        }
         return sql.toString();
     }
 
@@ -108,8 +188,12 @@ public class TableUtil {
                 boolean isPrimaryKey = column.primaryKey();
                 boolean isNotNull = column.notNull();
                 boolean isUnique = column.unique();
+                String defaultVal = column.defaultVal();
                 sql.append(columnName);
                 sql.append(getType(columnType, field));
+                if (!defaultVal.equals("")) {
+                    sql.append(String.format("%s '%s' ", DEFAULT_VAL, defaultVal));
+                }
                 if (isPrimaryKey) {
                     sql.append(PRIMARY_KEY);
                 }

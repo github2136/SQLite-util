@@ -8,8 +8,12 @@ import com.github2136.sqliteutil.Table;
  */
 @Table
 public class Entity {
-    @Column
+    @Column()
     private String id;
-    @Column
+    @Column()
     private String name;
+    @Column(version = 2)
+    private String name2;
+    @Column(version = 3, defaultVal = "abc", notNull = true, primaryKey = true)
+    private String name3;
 }
