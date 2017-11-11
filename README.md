@@ -1,3 +1,4 @@
+[![](https://jitpack.io/v/github2136/SQLite-util.svg)](https://jitpack.io/#github2136/SQLite-util)
 首先引用SQLite-util   
 **compile 'com.github.github2136.SQLite-util:sqlite-util:5a8f7fad4b'**   
 **annotationProcessor 'com.github.github2136.SQLite-util:sqlite-util-compiler:5a8f7fad4b'**   
